@@ -4,6 +4,8 @@ session_start();
 if (isset($_SESSION['unique_id'])) {
     header("location: app.php");
 }
+$errors = array("email" => "");
+
 if (isset($_POST["submit"])) {
     $fname = mysqli_real_escape_string($conn, $_POST["fname"]);
     $lname = mysqli_real_escape_string($conn, $_POST["lname"]);
@@ -12,13 +14,21 @@ if (isset($_POST["submit"])) {
     $role = mysqli_real_escape_string($conn, $_POST["role"]);
     $ran_id = mysqli_real_escape_string($conn, rand(time(), 100000000));
     $password = mysqli_real_escape_string($conn, md5($password));
-    $result = mysqli_query($conn, "INSERT INTO users(firstname, lastname, email, password, role, unique_id) VALUES('$fname', '$lname', '$email', '$password', '$role', '$ran_id')");
-    if ($result) {
-        $_SESSION["email"] = $email;
-        $_SESSION["role"] = $role;
-        $_SESSION["unique_id"] = $ran_id;
-        $_SESSION["firstname"] = $fname;
-        $_SESSION["lastname"] = $lname;
+    $sql = mysqli_fetch_assoc(mysqli_query($conn, "SELECT email from users WHERE email = '$email'"));
+    if (!$sql) {
+        $result = mysqli_query($conn, "INSERT INTO users(firstname, lastname, email, password, role, unique_id) VALUES('$fname', '$lname', '$email', '$password', '$role', '$ran_id')");
+        if ($result) {
+            $_SESSION["email"] = $email;
+            $_SESSION["role"] = $role;
+            $_SESSION["unique_id"] = $ran_id;
+            $_SESSION["firstname"] = $fname;
+            $_SESSION["lastname"] = $lname;
+            if (isset($_SESSION["email"]) && $_SESSION["unique_id"]) {
+                header("Location: app.php");
+            }
+        }
+    } else {
+        $errors["email"] = "<div class='error-text'>Email already exists</div>";
     }
 }
 ?>
@@ -31,7 +41,7 @@ if (isset($_POST["submit"])) {
             <header>Create a new account</header>
             <form action="<?php echo $_SERVER["PHP_SELF"] ?>" method="POST" enctype="multipart/form-data"
                 autocomplete="off">
-                <div class="error-text"></div>
+                <?php echo $errors["email"] ?>
                 <div class="name-details">
                     <div class="field input">
                         <label>First Name</label>
